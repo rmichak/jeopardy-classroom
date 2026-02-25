@@ -3,7 +3,7 @@
 import '../globals.css'
 import { useState } from 'react'
 
-const AI_PROMPT = `You are a Jeopardy game builder for classroom use. Your job is to create a JSON game file that can be loaded into a web-based Jeopardy game at https://jeopardy-classroom.vercel.app/
+const AI_PROMPT = `You are a Jeopardy game builder for classroom use. Your job is to create a JSON game file that can be loaded into a web-based Jeopardy game at https://jeopardy.randymichak.com/
 
 Before generating the game, ask me the following questions ONE AT A TIME. Wait for my answer before asking the next question:
 
@@ -66,7 +66,7 @@ The "clues" object must have one key per category ("0", "1", "2", etc.) and each
 After outputting the JSON, remind me to:
 1. Copy the JSON
 2. Paste it into a text file and save it as something.json
-3. Go to https://jeopardy-classroom.vercel.app/
+3. Go to https://jeopardy.randymichak.com/
 4. Click the 📂 Load button and select the file`
 
 export default function InstructionsPage() {
