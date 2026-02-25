@@ -320,7 +320,6 @@ export default function JeopardyGame() {
             onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}>GitHub ↗</a>
         </div>
         <div className="header-controls">
-          <button className="btn btn-final" onClick={openFinal}>🏆 Final</button>
           <button className="btn" style={{ background: '#00695c', color: '#fff' }} onClick={createNewGame}>➕ New</button>
           <button className="btn btn-primary" onClick={editGame}>✏️ Edit</button>
           <button className="btn btn-success" onClick={saveGame}>💾 Save</button>
@@ -337,6 +336,12 @@ export default function JeopardyGame() {
             <span className="score-value">${scores[team] || 0}</span>
           </div>
         ))}
+      </div>
+
+      {/* FINAL JEOPARDY BUTTON + AI LINK */}
+      <div className="board-top-bar">
+        <button className="btn btn-final btn-final-board" onClick={openFinal}>🏆 FINAL JEOPARDY</button>
+        <a href="/instructions" target="_blank" rel="noopener noreferrer" className="ai-help-link">🤖 Create games with AI</a>
       </div>
 
       {/* BOARD */}
