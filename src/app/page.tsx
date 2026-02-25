@@ -312,7 +312,13 @@ export default function JeopardyGame() {
     <>
       {/* HEADER */}
       <div className="header">
-        <h1>{game.title || 'Jeopardy!'}</h1>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+          <h1>{game.title || 'Jeopardy!'}</h1>
+          <a href="https://github.com/rmichak/jeopardy-classroom" target="_blank" rel="noopener noreferrer"
+            style={{ color: '#90caf9', fontSize: '0.85rem', textDecoration: 'none', opacity: 0.7 }}
+            onMouseOver={e => (e.currentTarget.style.opacity = '1')}
+            onMouseOut={e => (e.currentTarget.style.opacity = '0.7')}>GitHub ↗</a>
+        </div>
         <div className="header-controls">
           <button className="btn btn-final" onClick={openFinal}>🏆 Final</button>
           <button className="btn" style={{ background: '#00695c', color: '#fff' }} onClick={createNewGame}>➕ New</button>
