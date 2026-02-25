@@ -63,53 +63,80 @@ Save a game first to see the format, then edit the JSON file in any text editor.
 
 ### Option 3: Use AI to Generate a Game
 
-You can use ChatGPT, Claude, or any AI assistant to generate a complete game JSON file. Just give it a prompt like this:
+Copy and paste the prompt below directly into [Claude](https://claude.ai), [ChatGPT](https://chatgpt.com), or any AI assistant. It will ask you a few questions about your class and then produce a ready-to-use JSON file.
 
-> Create a Jeopardy game JSON file for my \[subject\] class covering \[topics\]. Use this exact format:
->
-> - 5 categories with 5 clues each ($100–$500, easy to hard)
-> - All clues should be statements and all answers should be in "What is...?" format
-> - Include a Final Jeopardy with a 60-second timer
-> - Use this JSON structure:
->
-> ```json
-> {
->   "game": {
->     "title": "Game Name Here",
->     "teams": ["Team 1", "Team 2"],
->     "categories": ["Cat 1", "Cat 2", "Cat 3", "Cat 4", "Cat 5"],
->     "values": [100, 200, 300, 400, 500],
->     "clues": {
->       "0": {
->         "0": { "q": "Clue text", "a": "What is answer?" },
->         "1": { "q": "Clue text", "a": "What is answer?" },
->         "2": { "q": "Clue text", "a": "What is answer?" },
->         "3": { "q": "Clue text", "a": "What is answer?" },
->         "4": { "q": "Clue text", "a": "What is answer?" }
->       },
->       "1": { ... },
->       "2": { ... },
->       "3": { ... },
->       "4": { ... }
->     },
->     "finalJeopardy": {
->       "category": "Category Name",
->       "clue": "Final clue text",
->       "answer": "What is the answer?",
->       "timerSeconds": 60
->     }
->   },
->   "scores": {},
->   "usedClues": []
-> }
-> ```
+<details>
+<summary><strong>📋 Click to copy the AI prompt</strong></summary>
 
-**Tips for better results:**
-- Be specific about the topic: "Chapter 5 of our Linux textbook covering file permissions" works better than just "Linux"
-- Mention difficulty scaling: "$100 should be basic recall, $500 should require applying concepts"
-- Ask for a specific number of categories if you want fewer or more than 5
-- Tell it to avoid trick questions if this is for students
-- You can paste your syllabus, lecture notes, or textbook chapter summaries for more accurate content
+```
+You are a Jeopardy game builder for classroom use. Your job is to create a JSON game file that can be loaded into a web-based Jeopardy game at https://jeopardy-classroom.vercel.app/
+
+Before generating the game, ask me the following questions ONE AT A TIME. Wait for my answer before asking the next question:
+
+1. What subject/course is this for? (e.g., "ITN 170 — Linux Administration")
+2. What specific topics or chapters should the questions cover? (You can paste lecture notes, syllabus excerpts, or just describe the topics.)
+3. How many categories do you want? (Default is 5, range is 2–8)
+4. How many point levels per category? (Default is 5 at $100–$500, range is 1–8)
+5. How many teams will play? (Default is 2) What should they be called?
+6. How hard should the questions be? (e.g., "intro level — these are freshmen" or "senior level — they should know the material well")
+7. Any topics or question types to avoid?
+8. Do you want a Final Jeopardy question? If yes, what topic? (Default: yes, you pick the topic)
+9. How many seconds for the Final Jeopardy timer? (Default: 60)
+
+After I answer all the questions, generate the complete JSON file following these rules:
+
+- All clues must be STATEMENTS (not questions). Example: "This command displays your current working directory." NOT "What command displays your current working directory?"
+- All answers must be in Jeopardy format: "What is...?", "Who is...?", etc.
+- $100 clues = easy recall, $200–$300 = moderate, $400–$500 = harder / application-based
+- No trick questions — this is for learning, not gotchas
+- Make sure every answer is factually correct
+- Categories should be distinct and cover different aspects of the topic
+
+Output ONLY the JSON (no explanation) in this exact format:
+
+{
+  "game": {
+    "title": "Game Name Here",
+    "teams": ["Team 1", "Team 2"],
+    "categories": ["Category 1", "Category 2", "Category 3", "Category 4", "Category 5"],
+    "values": [100, 200, 300, 400, 500],
+    "clues": {
+      "0": {
+        "0": { "q": "Clue for Cat 1, $100", "a": "What is answer?" },
+        "1": { "q": "Clue for Cat 1, $200", "a": "What is answer?" },
+        "2": { "q": "Clue for Cat 1, $300", "a": "What is answer?" },
+        "3": { "q": "Clue for Cat 1, $400", "a": "What is answer?" },
+        "4": { "q": "Clue for Cat 1, $500", "a": "What is answer?" }
+      },
+      "1": {
+        "0": { "q": "Clue for Cat 2, $100", "a": "What is answer?" },
+        "1": { "q": "Clue for Cat 2, $200", "a": "What is answer?" },
+        "2": { "q": "Clue for Cat 2, $300", "a": "What is answer?" },
+        "3": { "q": "Clue for Cat 2, $400", "a": "What is answer?" },
+        "4": { "q": "Clue for Cat 2, $500", "a": "What is answer?" }
+      }
+    },
+    "finalJeopardy": {
+      "category": "Final Category",
+      "clue": "Final Jeopardy clue as a statement",
+      "answer": "What is the answer?",
+      "timerSeconds": 60
+    }
+  },
+  "scores": {},
+  "usedClues": []
+}
+
+The "clues" object must have one key per category ("0", "1", "2", etc.) and each category must have one key per point level ("0" for $100, "1" for $200, etc.). Fill in ALL categories and ALL point levels — do not use "..." or placeholders.
+
+After outputting the JSON, remind me to:
+1. Copy the JSON
+2. Paste it into a text file and save it as something.json
+3. Go to https://jeopardy-classroom.vercel.app/
+4. Click the 📂 Load button and select the file
+```
+
+</details>
 
 Once the AI generates the JSON, save it as a `.json` file and load it into the game with the **📂 Load** button.
 
