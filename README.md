@@ -61,6 +61,58 @@ Save a game first to see the format, then edit the JSON file in any text editor.
 }
 ```
 
+### Option 3: Use AI to Generate a Game
+
+You can use ChatGPT, Claude, or any AI assistant to generate a complete game JSON file. Just give it a prompt like this:
+
+> Create a Jeopardy game JSON file for my \[subject\] class covering \[topics\]. Use this exact format:
+>
+> - 5 categories with 5 clues each ($100–$500, easy to hard)
+> - All clues should be statements and all answers should be in "What is...?" format
+> - Include a Final Jeopardy with a 60-second timer
+> - Use this JSON structure:
+>
+> ```json
+> {
+>   "game": {
+>     "title": "Game Name Here",
+>     "teams": ["Team 1", "Team 2"],
+>     "categories": ["Cat 1", "Cat 2", "Cat 3", "Cat 4", "Cat 5"],
+>     "values": [100, 200, 300, 400, 500],
+>     "clues": {
+>       "0": {
+>         "0": { "q": "Clue text", "a": "What is answer?" },
+>         "1": { "q": "Clue text", "a": "What is answer?" },
+>         "2": { "q": "Clue text", "a": "What is answer?" },
+>         "3": { "q": "Clue text", "a": "What is answer?" },
+>         "4": { "q": "Clue text", "a": "What is answer?" }
+>       },
+>       "1": { ... },
+>       "2": { ... },
+>       "3": { ... },
+>       "4": { ... }
+>     },
+>     "finalJeopardy": {
+>       "category": "Category Name",
+>       "clue": "Final clue text",
+>       "answer": "What is the answer?",
+>       "timerSeconds": 60
+>     }
+>   },
+>   "scores": {},
+>   "usedClues": []
+> }
+> ```
+
+**Tips for better results:**
+- Be specific about the topic: "Chapter 5 of our Linux textbook covering file permissions" works better than just "Linux"
+- Mention difficulty scaling: "$100 should be basic recall, $500 should require applying concepts"
+- Ask for a specific number of categories if you want fewer or more than 5
+- Tell it to avoid trick questions if this is for students
+- You can paste your syllabus, lecture notes, or textbook chapter summaries for more accurate content
+
+Once the AI generates the JSON, save it as a `.json` file and load it into the game with the **📂 Load** button.
+
 ## Tech Stack
 
 - [Next.js 14](https://nextjs.org/) — React framework
