@@ -2,6 +2,7 @@
 
 import './globals.css'
 import { useState, useCallback, useEffect, useRef } from 'react'
+import GameEditor from './editor'
 
 // ============================================================
 // TYPES
@@ -21,6 +22,7 @@ interface GameData {
     category: string
     clue: string
     answer: string
+    timerSeconds?: number
   }
 }
 
@@ -34,12 +36,11 @@ interface SaveData {
 // DEFAULT GAME
 // ============================================================
 const DEFAULT_GAME: GameData = {
-  title: "Jeopardy!",
+  title: "ITN 170 — Modules 1–4",
   teams: ["Team 1", "Team 2"],
   categories: ["Navigation & Paths", "Files & Directories", "Viewing & Editing", "Pipes & Redirection", "Permissions"],
   values: [100, 200, 300, 400, 500],
   clues: {
-    // Category 0: Navigation & Paths
     0: {
       0: { q: "This command displays the full absolute path of your current working directory.", a: "What is pwd?" },
       1: { q: "Running cd with no arguments takes you to this location.", a: "What is your home directory?" },
@@ -47,7 +48,6 @@ const DEFAULT_GAME: GameData = {
       3: { q: "/var/log/syslog is this type of path, because it starts from the root.", a: "What is an absolute path?" },
       4: { q: "This shortcut character represents your home directory in a path (e.g., ~/Documents).", a: "What is ~ (tilde)?" },
     },
-    // Category 1: Files & Directories
     1: {
       0: { q: "This command creates a new empty directory.", a: "What is mkdir?" },
       1: { q: "This ls flag shows hidden files — the ones starting with a dot.", a: "What is -a?" },
@@ -55,7 +55,6 @@ const DEFAULT_GAME: GameData = {
       3: { q: "Unlike cp, this command relocates a file so it no longer exists in the original location.", a: "What is mv?" },
       4: { q: "Adding this flag to rm makes it prompt you for confirmation before each deletion.", a: "What is -i (interactive)?" },
     },
-    // Category 2: Viewing & Editing
     2: {
       0: { q: "This command dumps the entire contents of a file to the screen.", a: "What is cat?" },
       1: { q: "In vi, pressing this key switches from command mode to insert mode.", a: "What is i?" },
@@ -63,7 +62,6 @@ const DEFAULT_GAME: GameData = {
       3: { q: "In vi, this command sequence saves the file and exits: colon, w, q.", a: "What is :wq?" },
       4: { q: "To see the first 5 lines of /etc/passwd, you use this command with -n 5.", a: "What is head?" },
     },
-    // Category 3: Pipes & Redirection
     3: {
       0: { q: "This symbol sends the output of one command as input to another command.", a: "What is the pipe |?" },
       1: { q: "The > operator does this to an existing file's contents.", a: "What is overwrite (replace) them?" },
@@ -71,7 +69,6 @@ const DEFAULT_GAME: GameData = {
       3: { q: "ls /etc | grep network — the grep part of this command does this job.", a: "What is filter the output to show only lines containing 'network'?" },
       4: { q: "This redirection operator sends error messages (stderr) to a file: the number 2 followed by >.", a: "What is 2>?" },
     },
-    // Category 4: Permissions
     4: {
       0: { q: "The permission string -rwxr-x--- translates to this three-digit octal number.", a: "What is 750?" },
       1: { q: "chmod u+x script.sh adds this specific permission for the owner only.", a: "What is execute?" },
@@ -84,11 +81,51 @@ const DEFAULT_GAME: GameData = {
     category: "Linux Security",
     clue: "When a file has permissions -rw-r-----, the three dashes at the end mean this group of users has absolutely no access to the file.",
     answer: "Who are 'others' (everyone else on the system)?",
+    timerSeconds: 60,
   },
+}
+
+const BLANK_GAME: GameData = {
+  title: "",
+  teams: ["Team 1", "Team 2"],
+  categories: ["Category 1", "Category 2", "Category 3", "Category 4", "Category 5"],
+  values: [100, 200, 300, 400, 500],
+  clues: {},
+  finalJeopardy: { category: "", clue: "", answer: "", timerSeconds: 60 },
 }
 
 function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
+}
+
+// ============================================================
+// COUNTDOWN TIMER HOOK
+// ============================================================
+function useCountdown(initialSeconds: number, autoStart: boolean) {
+  const [seconds, setSeconds] = useState(initialSeconds)
+  const [running, setRunning] = useState(autoStart)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (running && seconds > 0) {
+      intervalRef.current = setInterval(() => {
+        setSeconds(prev => {
+          if (prev <= 1) {
+            setRunning(false)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [running, seconds > 0])
+
+  const start = () => setRunning(true)
+  const pause = () => setRunning(false)
+  const reset = (s: number) => { setSeconds(s); setRunning(false) }
+
+  return { seconds, running, start, pause, reset }
 }
 
 // ============================================================
@@ -99,25 +136,25 @@ export default function JeopardyGame() {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [usedClues, setUsedClues] = useState<Set<string>>(new Set())
 
-  // Overlay states
   const [activeClue, setActiveClue] = useState<{ catIdx: number; rowIdx: number } | null>(null)
   const [answerRevealed, setAnswerRevealed] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ text: string; type: 'correct' | 'wrong' } | null>(null)
 
-  // Final Jeopardy
   const [showFinal, setShowFinal] = useState(false)
   const [finalAnswerRevealed, setFinalAnswerRevealed] = useState(false)
   const [finalWagers, setFinalWagers] = useState<Record<string, number>>({})
   const [finalScored, setFinalScored] = useState<Set<string>>(new Set())
+  const [finalTimerStarted, setFinalTimerStarted] = useState(false)
 
-  // Editor
   const [showEditor, setShowEditor] = useState(false)
+  const [editorMode, setEditorMode] = useState<'edit' | 'new'>('edit')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Init scores when game teams change
+  const finalTimer = useCountdown(game.finalJeopardy?.timerSeconds || 60, false)
+
   useEffect(() => {
     setScores(prev => {
       const next: Record<string, number> = {}
@@ -126,13 +163,12 @@ export default function JeopardyGame() {
     })
   }, [game.teams])
 
-  // Keyboard shortcuts
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       if (e.key === 'Escape') {
         if (showEditor) setShowEditor(false)
-        else if (showFinal) { setShowFinal(false); setFinalAnswerRevealed(false) }
+        else if (showFinal) { setShowFinal(false); setFinalAnswerRevealed(false); setFinalTimerStarted(false) }
         else if (activeClue) closeClue()
       }
       if (e.key === ' ') {
@@ -144,7 +180,6 @@ export default function JeopardyGame() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [activeClue, answerRevealed, showFinal, finalAnswerRevealed, showEditor])
 
-  // Clean up close timer
   useEffect(() => { return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current) } }, [])
 
   // ---- CLUE ACTIONS ----
@@ -188,10 +223,7 @@ export default function JeopardyGame() {
   // ---- FINAL JEOPARDY ----
   const scoreFinalTeam = useCallback((team: string, correct: boolean) => {
     const wager = finalWagers[team] || 0
-    setScores(prev => ({
-      ...prev,
-      [team]: (prev[team] || 0) + (correct ? wager : -wager),
-    }))
+    setScores(prev => ({ ...prev, [team]: (prev[team] || 0) + (correct ? wager : -wager) }))
     setFinalScored(prev => new Set(prev).add(team))
   }, [finalWagers])
 
@@ -201,7 +233,25 @@ export default function JeopardyGame() {
     setFinalAnswerRevealed(false)
     setFinalWagers({})
     setFinalScored(new Set())
+    setFinalTimerStarted(false)
+    finalTimer.reset(game.finalJeopardy.timerSeconds || 60)
   }, [game.finalJeopardy])
+
+  const startFinalTimer = useCallback(() => {
+    setFinalTimerStarted(true)
+    finalTimer.start()
+  }, [finalTimer])
+
+  // ---- NEW GAME ----
+  const createNewGame = useCallback(() => {
+    setEditorMode('new')
+    setShowEditor(true)
+  }, [])
+
+  const editGame = useCallback(() => {
+    setEditorMode('edit')
+    setShowEditor(true)
+  }, [])
 
   // ---- SAVE / LOAD ----
   const saveGame = useCallback(() => {
@@ -210,7 +260,7 @@ export default function JeopardyGame() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    const safeName = (game.categories.slice(0, 3).join('-') || 'jeopardy').replace(/[^a-zA-Z0-9-]/g, '')
+    const safeName = (game.title || game.categories.slice(0, 3).join('-') || 'jeopardy').replace(/[^a-zA-Z0-9- ]/g, '').replace(/\s+/g, '-')
     a.download = `jeopardy-${safeName}.json`
     a.click()
     URL.revokeObjectURL(url)
@@ -224,6 +274,7 @@ export default function JeopardyGame() {
       try {
         const data: SaveData = JSON.parse(ev.target?.result as string)
         if (data.game) {
+          if (!data.game.finalJeopardy.timerSeconds) data.game.finalJeopardy.timerSeconds = 60
           setGame(data.game)
           setScores(data.scores || {})
           setUsedClues(new Set(data.usedClues || []))
@@ -237,41 +288,35 @@ export default function JeopardyGame() {
   const resetBoard = useCallback(() => {
     if (!confirm('Reset the board? All clues will reopen and scores reset to $0.')) return
     setUsedClues(new Set())
-    setScores(() => {
-      const s: Record<string, number> = {}
-      game.teams.forEach(t => { s[t] = 0 })
-      return s
-    })
+    setScores(() => { const s: Record<string, number> = {}; game.teams.forEach(t => { s[t] = 0 }); return s })
   }, [game.teams])
 
-  // ---- RENAME TEAM ----
   const renameTeam = useCallback((oldName: string) => {
     const newName = prompt(`Rename "${oldName}" to:`, oldName)
     if (!newName || newName === oldName) return
-    setGame(prev => ({
-      ...prev,
-      teams: prev.teams.map(t => t === oldName ? newName : t),
-    }))
-    setScores(prev => {
-      const next = { ...prev }
-      next[newName] = next[oldName] || 0
-      delete next[oldName]
-      return next
-    })
+    setGame(prev => ({ ...prev, teams: prev.teams.map(t => t === oldName ? newName : t) }))
+    setScores(prev => { const next = { ...prev }; next[newName] = next[oldName] || 0; delete next[oldName]; return next })
   }, [])
 
-  // ---- GET CURRENT CLUE DATA ----
   const clueData = activeClue ? game.clues[activeClue.catIdx]?.[activeClue.rowIdx] : null
   const clueValue = activeClue ? game.values[activeClue.rowIdx] : 0
+
+  // Timer display helper
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60)
+    const sec = s % 60
+    return `${m}:${sec.toString().padStart(2, '0')}`
+  }
 
   return (
     <>
       {/* HEADER */}
       <div className="header">
-        <h1>Jeopardy!</h1>
+        <h1>{game.title || 'Jeopardy!'}</h1>
         <div className="header-controls">
           <button className="btn btn-final" onClick={openFinal}>🏆 Final</button>
-          <button className="btn btn-primary" onClick={() => setShowEditor(true)}>✏️ Edit</button>
+          <button className="btn" style={{ background: '#00695c', color: '#fff' }} onClick={createNewGame}>➕ New</button>
+          <button className="btn btn-primary" onClick={editGame}>✏️ Edit</button>
           <button className="btn btn-success" onClick={saveGame}>💾 Save</button>
           <button className="btn btn-warning" onClick={() => fileInputRef.current?.click()}>📂 Load</button>
           <button className="btn btn-danger" onClick={resetBoard}>🔄 Reset</button>
@@ -299,11 +344,7 @@ export default function JeopardyGame() {
               const key = `${catIdx}-${rowIdx}`
               const used = usedClues.has(key)
               return (
-                <div
-                  key={key}
-                  className={`clue-cell ${used ? 'used' : ''}`}
-                  onClick={() => !used && openClue(catIdx, rowIdx)}
-                >
+                <div key={key} className={`clue-cell ${used ? 'used' : ''}`} onClick={() => !used && openClue(catIdx, rowIdx)}>
                   {used ? '' : `$${val}`}
                 </div>
               )
@@ -320,32 +361,24 @@ export default function JeopardyGame() {
             <div className="clue-category">{game.categories[activeClue.catIdx]}</div>
             <div className="clue-value">${clueValue}</div>
             <div className="clue-text">{clueData.q}</div>
-
             {answerRevealed && (
               <div className="clue-answer visible">
                 <div className="clue-answer-label">Answer</div>
                 <div className="clue-answer-text">{clueData.a}</div>
               </div>
             )}
-
             {!answerRevealed && (
               <div className="clue-controls">
                 <button className="btn btn-primary btn-lg" onClick={() => setAnswerRevealed(true)}>Show Answer</button>
               </div>
             )}
-
             {answerRevealed && (
               <div className="scoring-panel visible">
                 <div className="scoring-prompt">Who buzzed in?</div>
                 <div className="scoring-teams">
                   {game.teams.map(team => (
-                    <button
-                      key={team}
-                      className={`scoring-team-btn ${selectedTeam === team ? 'selected' : ''}`}
-                      onClick={() => { setSelectedTeam(team); setFeedback(null) }}
-                    >
-                      {team}
-                    </button>
+                    <button key={team} className={`scoring-team-btn ${selectedTeam === team ? 'selected' : ''}`}
+                      onClick={() => { setSelectedTeam(team); setFeedback(null) }}>{team}</button>
                   ))}
                 </div>
                 {selectedTeam && (
@@ -354,9 +387,7 @@ export default function JeopardyGame() {
                     <button className="btn btn-wrong" onClick={scoreWrong}>❌ Wrong</button>
                   </div>
                 )}
-                {feedback && (
-                  <div className={`score-feedback visible ${feedback.type}`}>{feedback.text}</div>
-                )}
+                {feedback && <div className={`score-feedback visible ${feedback.type}`}>{feedback.text}</div>}
                 <div style={{ marginTop: 20 }}>
                   <button className="btn btn-skip" onClick={closeClue}>No one got it — Close</button>
                 </div>
@@ -366,190 +397,79 @@ export default function JeopardyGame() {
         </div>
       )}
 
-      {/* FINAL JEOPARDY OVERLAY */}
+      {/* FINAL JEOPARDY */}
       {showFinal && game.finalJeopardy && (
         <div className="overlay active">
           <div className="clue-card final-card">
-            <button className="clue-close" onClick={() => { setShowFinal(false); setFinalAnswerRevealed(false) }}>&times;</button>
+            <button className="clue-close" onClick={() => { setShowFinal(false); setFinalAnswerRevealed(false); setFinalTimerStarted(false) }}>&times;</button>
             <div className="clue-category">{game.finalJeopardy.category}</div>
             <div className="clue-value">⭐ FINAL JEOPARDY ⭐</div>
             <div className="clue-text">{game.finalJeopardy.clue}</div>
 
-            {finalAnswerRevealed && (
-              <div className="clue-answer visible">
-                <div className="clue-answer-label">Answer</div>
-                <div className="clue-answer-text">{game.finalJeopardy.answer}</div>
-              </div>
-            )}
-
+            {/* TIMER */}
             {!finalAnswerRevealed && (
-              <div className="clue-controls">
-                <button className="btn btn-final btn-lg" onClick={() => setFinalAnswerRevealed(true)}>Show Answer</button>
+              <div style={{ marginTop: 30 }}>
+                <div className={`final-timer ${finalTimer.seconds <= 10 && finalTimerStarted ? 'final-timer-critical' : ''} ${finalTimer.seconds === 0 ? 'final-timer-done' : ''}`}>
+                  {formatTime(finalTimer.seconds)}
+                </div>
+                <div style={{ marginTop: 16, display: 'flex', gap: 12, justifyContent: 'center' }}>
+                  {!finalTimerStarted && (
+                    <button className="btn btn-final btn-lg" onClick={startFinalTimer}>▶️ Start Timer</button>
+                  )}
+                  {finalTimerStarted && finalTimer.running && (
+                    <button className="btn btn-warning" onClick={() => finalTimer.pause()}>⏸ Pause</button>
+                  )}
+                  {finalTimerStarted && !finalTimer.running && finalTimer.seconds > 0 && (
+                    <button className="btn btn-final" onClick={() => finalTimer.start()}>▶️ Resume</button>
+                  )}
+                  <button className="btn btn-primary btn-lg" onClick={() => setFinalAnswerRevealed(true)}>Show Answer</button>
+                </div>
               </div>
             )}
 
             {finalAnswerRevealed && (
-              <div className="scoring-panel visible">
-                <div className="scoring-prompt">Award points to teams that got it right:</div>
-                <div className="scoring-teams" style={{ flexDirection: 'column', alignItems: 'center' }}>
-                  {game.teams.map(team => (
-                    <div key={team} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <span style={{ color: '#ce93d8', fontSize: '1.2rem', fontWeight: 700, minWidth: 120, textAlign: 'right' }}>{team}:</span>
-                      <input
-                        type="number"
-                        min={0}
-                        placeholder="Wager"
-                        disabled={finalScored.has(team)}
-                        value={finalWagers[team] || ''}
-                        onChange={e => setFinalWagers(prev => ({ ...prev, [team]: parseInt(e.target.value) || 0 }))}
-                        style={{
-                          padding: '8px 12px', border: `1px solid ${finalScored.has(team) ? '#69f0ae' : '#ce93d8'}`,
-                          borderRadius: 6, background: '#1a0830', color: '#fff', width: 100, textAlign: 'center', fontSize: '1.1rem',
-                        }}
-                      />
-                      <button className="btn btn-correct" style={{ padding: '10px 20px' }} disabled={finalScored.has(team)} onClick={() => scoreFinalTeam(team, true)}>✅</button>
-                      <button className="btn btn-wrong" style={{ padding: '10px 20px' }} disabled={finalScored.has(team)} onClick={() => scoreFinalTeam(team, false)}>❌</button>
-                    </div>
-                  ))}
+              <>
+                <div className="clue-answer visible">
+                  <div className="clue-answer-label">Answer</div>
+                  <div className="clue-answer-text">{game.finalJeopardy.answer}</div>
                 </div>
-                <div style={{ marginTop: 20 }}>
-                  <button className="btn btn-skip" onClick={() => { setShowFinal(false); setFinalAnswerRevealed(false) }}>Done — Close</button>
+                <div className="scoring-panel visible">
+                  <div className="scoring-prompt">Award points to teams that got it right:</div>
+                  <div className="scoring-teams" style={{ flexDirection: 'column', alignItems: 'center' }}>
+                    {game.teams.map(team => (
+                      <div key={team} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <span style={{ color: '#ce93d8', fontSize: '1.2rem', fontWeight: 700, minWidth: 120, textAlign: 'right' }}>{team}:</span>
+                        <input type="number" min={0} placeholder="Wager" disabled={finalScored.has(team)}
+                          value={finalWagers[team] || ''}
+                          onChange={e => setFinalWagers(prev => ({ ...prev, [team]: parseInt(e.target.value) || 0 }))}
+                          style={{ padding: '8px 12px', border: `1px solid ${finalScored.has(team) ? '#69f0ae' : '#ce93d8'}`, borderRadius: 6, background: '#1a0830', color: '#fff', width: 100, textAlign: 'center', fontSize: '1.1rem' }}
+                        />
+                        <button className="btn btn-correct" style={{ padding: '10px 20px' }} disabled={finalScored.has(team)} onClick={() => scoreFinalTeam(team, true)}>✅</button>
+                        <button className="btn btn-wrong" style={{ padding: '10px 20px' }} disabled={finalScored.has(team)} onClick={() => scoreFinalTeam(team, false)}>❌</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 20 }}>
+                    <button className="btn btn-skip" onClick={() => { setShowFinal(false); setFinalAnswerRevealed(false); setFinalTimerStarted(false) }}>Done — Close</button>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
       )}
 
       {/* EDITOR */}
-      {showEditor && <GameEditor game={game} onApply={(g) => { setGame(g); setUsedClues(new Set()); setShowEditor(false) }} onClose={() => setShowEditor(false)} />}
+      {showEditor && (
+        <GameEditor
+          game={editorMode === 'new' ? deepClone(BLANK_GAME) : game}
+          isNew={editorMode === 'new'}
+          onApply={(g) => { setGame(g); setUsedClues(new Set()); setScores(() => { const s: Record<string, number> = {}; g.teams.forEach(t => { s[t] = 0 }); return s }); setShowEditor(false) }}
+          onClose={() => setShowEditor(false)}
+        />
+      )}
 
       <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileLoad} />
     </>
   )
 }
-
-// ============================================================
-// EDITOR COMPONENT
-// ============================================================
-function GameEditor({ game, onApply, onClose }: { game: GameData; onApply: (g: GameData) => void; onClose: () => void }) {
-  const [teams, setTeams] = useState(game.teams)
-  const [catCount, setCatCount] = useState(game.categories.length)
-  const [rowCount, setRowCount] = useState(game.values.length)
-  const [categories, setCategories] = useState(game.categories)
-  const [clues, setClues] = useState(game.clues)
-  const [fj, setFj] = useState(game.finalJeopardy)
-
-  const values = Array.from({ length: rowCount }, (_, i) => (i + 1) * 100)
-
-  const updateClue = (c: number, r: number, field: 'q' | 'a', val: string) => {
-    setClues(prev => {
-      const next = deepClone(prev)
-      if (!next[c]) next[c] = {}
-      if (!next[c][r]) next[c][r] = { q: '', a: '' }
-      next[c][r][field] = val
-      return next
-    })
-  }
-
-  const handleApply = () => {
-    onApply({
-      ...game,
-      teams,
-      categories: categories.slice(0, catCount),
-      values,
-      clues,
-      finalJeopardy: fj,
-    })
-  }
-
-  return (
-    <div className="modal-overlay active">
-      <div className="modal">
-        <h2>✏️ Game Editor</h2>
-
-        <div className="team-config">
-          <label>Teams:</label>
-          <input type="number" min={1} max={8} value={teams.length}
-            onChange={e => {
-              const n = Math.max(1, Math.min(8, parseInt(e.target.value) || 2))
-              setTeams(prev => {
-                const next = [...prev]
-                while (next.length < n) next.push(`Team ${next.length + 1}`)
-                return next.slice(0, n)
-              })
-            }}
-            style={{ padding: '6px 10px', border: '1px solid #1a237e', borderRadius: 6, background: '#0a0e2a', color: '#fff', width: 50, textAlign: 'center' }}
-          />
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginLeft: 10 }}>
-            {teams.map((t, i) => (
-              <input key={i} value={t}
-                onChange={e => setTeams(prev => prev.map((old, j) => j === i ? e.target.value : old))}
-                style={{ padding: '6px 10px', border: '1px solid #1a237e', borderRadius: 6, background: '#0a0e2a', color: '#fff', width: 120 }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="team-config">
-          <label>Categories:</label>
-          <input type="number" min={2} max={8} value={catCount}
-            onChange={e => {
-              const n = Math.max(2, Math.min(8, parseInt(e.target.value) || 5))
-              setCatCount(n)
-              setCategories(prev => {
-                const next = [...prev]
-                while (next.length < n) next.push(`Category ${next.length + 1}`)
-                return next
-              })
-            }}
-            style={{ padding: '6px 10px', border: '1px solid #1a237e', borderRadius: 6, background: '#0a0e2a', color: '#fff', width: 50, textAlign: 'center' }}
-          />
-          <label style={{ marginLeft: 16 }}>Rows:</label>
-          <input type="number" min={1} max={8} value={rowCount}
-            onChange={e => setRowCount(Math.max(1, Math.min(8, parseInt(e.target.value) || 5)))}
-            style={{ padding: '6px 10px', border: '1px solid #1a237e', borderRadius: 6, background: '#0a0e2a', color: '#fff', width: 50, textAlign: 'center' }}
-          />
-        </div>
-
-        {Array.from({ length: catCount }).map((_, c) => (
-          <div key={c} className="category-block">
-            <h4>Category {c + 1}</h4>
-            <div className="form-row">
-              <label>Name:</label>
-              <input value={categories[c] || ''} onChange={e => setCategories(prev => prev.map((old, j) => j === c ? e.target.value : old))} placeholder="Category name" />
-            </div>
-            {values.map((val, r) => {
-              const cd = clues[c]?.[r]
-              return (
-                <div key={r}>
-                  <div className="form-row" style={{ marginTop: 8 }}>
-                    <label>${val} Q:</label>
-                    <textarea value={cd?.q || ''} onChange={e => updateClue(c, r, 'q', e.target.value)} placeholder="Question / Clue" />
-                  </div>
-                  <div className="form-row">
-                    <label>${val} A:</label>
-                    <input value={cd?.a || ''} onChange={e => updateClue(c, r, 'a', e.target.value)} placeholder="Answer" />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        ))}
-
-        <div className="category-block final-block">
-          <h4>🏆 Final Jeopardy</h4>
-          <div className="form-row"><label>Category:</label><input value={fj.category} onChange={e => setFj(prev => ({ ...prev, category: e.target.value }))} /></div>
-          <div className="form-row"><label>Clue:</label><textarea value={fj.clue} onChange={e => setFj(prev => ({ ...prev, clue: e.target.value }))} /></div>
-          <div className="form-row"><label>Answer:</label><input value={fj.answer} onChange={e => setFj(prev => ({ ...prev, answer: e.target.value }))} /></div>
-        </div>
-
-        <div className="modal-actions">
-          <button className="btn btn-danger" onClick={onClose}>Cancel</button>
-          <button className="btn btn-success" onClick={handleApply}>✅ Apply</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
