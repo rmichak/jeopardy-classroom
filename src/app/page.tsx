@@ -36,49 +36,54 @@ interface SaveData {
 const DEFAULT_GAME: GameData = {
   title: "Jeopardy!",
   teams: ["Team 1", "Team 2"],
-  categories: ["AI", "History", "IoT", "Daily Life", "Laws"],
+  categories: ["Navigation & Paths", "Files & Directories", "Viewing & Editing", "Pipes & Redirection", "Permissions"],
   values: [100, 200, 300, 400, 500],
   clues: {
+    // Category 0: Navigation & Paths
     0: {
-      0: { q: "This type of AI mimics human conversation.", a: "What is a chatbot?" },
-      1: { q: "GPT stands for this.", a: "What is Generative Pre-trained Transformer?" },
-      2: { q: "The 'T' in the Turing Test is named after this person.", a: "Who is Alan Turing?" },
-      3: { q: "This technique trains AI using labeled data.", a: "What is supervised learning?" },
-      4: { q: "This AI model created by OpenAI can generate images from text.", a: "What is DALL-E?" },
+      0: { q: "This command displays the full absolute path of your current working directory.", a: "What is pwd?" },
+      1: { q: "Running cd with no arguments takes you to this location.", a: "What is your home directory?" },
+      2: { q: "From /home/student/projects, this command moves you up one level to /home/student.", a: "What is cd ..?" },
+      3: { q: "/var/log/syslog is this type of path, because it starts from the root.", a: "What is an absolute path?" },
+      4: { q: "This shortcut character represents your home directory in a path (e.g., ~/Documents).", a: "What is ~ (tilde)?" },
     },
+    // Category 1: Files & Directories
     1: {
-      0: { q: "The year the World Wide Web was invented.", a: "What is 1989?" },
-      1: { q: "This company created the first personal computer.", a: "What is IBM?" },
-      2: { q: "Moore's Law predicts this doubles every ~2 years.", a: "What is the number of transistors on a chip?" },
-      3: { q: "ARPANET was the precursor to this.", a: "What is the Internet?" },
-      4: { q: "This 1984 Apple ad introduced the Macintosh.", a: "What is the '1984' Super Bowl commercial?" },
+      0: { q: "This command creates a new empty directory.", a: "What is mkdir?" },
+      1: { q: "This ls flag shows hidden files — the ones starting with a dot.", a: "What is -a?" },
+      2: { q: "To copy a directory AND everything inside it, you need this flag with cp.", a: "What is -r (recursive)?" },
+      3: { q: "Unlike cp, this command relocates a file so it no longer exists in the original location.", a: "What is mv?" },
+      4: { q: "Adding this flag to rm makes it prompt you for confirmation before each deletion.", a: "What is -i (interactive)?" },
     },
+    // Category 2: Viewing & Editing
     2: {
-      0: { q: "IoT stands for this.", a: "What is the Internet of Things?" },
-      1: { q: "This protocol is commonly used by IoT devices for messaging.", a: "What is MQTT?" },
-      2: { q: "A smart thermostat that learns your schedule.", a: "What is Nest?" },
-      3: { q: "This attack turns IoT devices into a botnet.", a: "What is Mirai?" },
-      4: { q: "The estimated number of IoT devices worldwide by 2025.", a: "What is ~75 billion?" },
+      0: { q: "This command dumps the entire contents of a file to the screen.", a: "What is cat?" },
+      1: { q: "In vi, pressing this key switches from command mode to insert mode.", a: "What is i?" },
+      2: { q: "This command shows the last 20 lines of access.log: tail -n 20 access.log. The command name means this body part.", a: "What is tail?" },
+      3: { q: "In vi, this command sequence saves the file and exits: colon, w, q.", a: "What is :wq?" },
+      4: { q: "To see the first 5 lines of /etc/passwd, you use this command with -n 5.", a: "What is head?" },
     },
+    // Category 3: Pipes & Redirection
     3: {
-      0: { q: "This voice assistant lives in Amazon's Echo.", a: "What is Alexa?" },
-      1: { q: "This app uses AI to recommend your next binge-watch.", a: "What is Netflix?" },
-      2: { q: "Face ID on iPhones uses this type of technology.", a: "What is facial recognition?" },
-      3: { q: "This AI feature in Gmail suggests how to finish your sentences.", a: "What is Smart Compose?" },
-      4: { q: "Self-driving cars primarily use this type of sensor to 'see'.", a: "What is LiDAR?" },
+      0: { q: "This symbol sends the output of one command as input to another command.", a: "What is the pipe |?" },
+      1: { q: "The > operator does this to an existing file's contents.", a: "What is overwrite (replace) them?" },
+      2: { q: "To add text to the end of a file without destroying existing content, use this double operator.", a: "What is >>?" },
+      3: { q: "ls /etc | grep network — the grep part of this command does this job.", a: "What is filter the output to show only lines containing 'network'?" },
+      4: { q: "This redirection operator sends error messages (stderr) to a file: the number 2 followed by >.", a: "What is 2>?" },
     },
+    // Category 4: Permissions
     4: {
-      0: { q: "This 2018 regulation protects EU citizens' data.", a: "What is GDPR?" },
-      1: { q: "In the US, this act regulates children's online privacy.", a: "What is COPPA?" },
-      2: { q: "This principle means collecting only necessary data.", a: "What is data minimization?" },
-      3: { q: "The EU's proposed law specifically regulating AI systems.", a: "What is the EU AI Act?" },
-      4: { q: "This legal concept holds creators responsible for AI harm.", a: "What is liability?" },
+      0: { q: "The permission string -rwxr-x--- translates to this three-digit octal number.", a: "What is 750?" },
+      1: { q: "chmod u+x script.sh adds this specific permission for the owner only.", a: "What is execute?" },
+      2: { q: "chmod 644 gives the owner read/write and gives group and others this permission.", a: "What is read-only?" },
+      3: { q: "This command changes the group ownership of a file (not the owner).", a: "What is chgrp?" },
+      4: { q: "chown student:staff notes.txt sets both owner and group in one command. The colon separates these two things.", a: "What are the user and the group?" },
     },
   },
   finalJeopardy: {
-    category: "The Future",
-    clue: "This theoretical point where AI surpasses human intelligence is both anticipated and feared.",
-    answer: "What is the Singularity?",
+    category: "Linux Security",
+    clue: "When a file has permissions -rw-r-----, the three dashes at the end mean this group of users has absolutely no access to the file.",
+    answer: "Who are 'others' (everyone else on the system)?",
   },
 }
 
