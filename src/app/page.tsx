@@ -36,51 +36,56 @@ interface SaveData {
 // DEFAULT GAME
 // ============================================================
 const DEFAULT_GAME: GameData = {
-  title: "ITN 170 — Modules 1–4",
+  title: "Intro to Python",
   teams: ["Team 1", "Team 2"],
-  categories: ["Navigation & Paths", "Files & Directories", "Viewing & Editing", "Pipes & Redirection", "Permissions"],
+  categories: ["Variables & Types", "Strings", "Lists & Loops", "Functions", "Conditionals"],
   values: [100, 200, 300, 400, 500],
   clues: {
+    // Category 0: Variables & Types
     0: {
-      0: { q: "This command displays the full absolute path of your current working directory.", a: "What is pwd?" },
-      1: { q: "Running cd with no arguments takes you to this location.", a: "What is your home directory?" },
-      2: { q: "From /home/student/projects, this command moves you up one level to /home/student.", a: "What is cd ..?" },
-      3: { q: "/var/log/syslog is this type of path, because it starts from the root.", a: "What is an absolute path?" },
-      4: { q: "This shortcut character represents your home directory in a path (e.g., ~/Documents).", a: "What is ~ (tilde)?" },
+      0: { q: "In Python, you create a variable by using this operator to assign a value: x = 10.", a: "What is the = (assignment) operator?" },
+      1: { q: "The built-in function type() returns this when you pass it the number 3.14.", a: "What is float?" },
+      2: { q: "Python lets you assign multiple variables in one line like this: a, b, c = 1, 2, 3. This is called this technique.", a: "What is multiple assignment (or tuple unpacking)?" },
+      3: { q: "Unlike languages like Java, Python does not require you to declare this before using a variable.", a: "What is a data type?" },
+      4: { q: "The int() function does this to the string '42'.", a: "What is convert (cast) it to the integer 42?" },
     },
+    // Category 1: Strings
     1: {
-      0: { q: "This command creates a new empty directory.", a: "What is mkdir?" },
-      1: { q: "This ls flag shows hidden files — the ones starting with a dot.", a: "What is -a?" },
-      2: { q: "To copy a directory AND everything inside it, you need this flag with cp.", a: "What is -r (recursive)?" },
-      3: { q: "Unlike cp, this command relocates a file so it no longer exists in the original location.", a: "What is mv?" },
-      4: { q: "Adding this flag to rm makes it prompt you for confirmation before each deletion.", a: "What is -i (interactive)?" },
+      0: { q: "You can create a string in Python using either single quotes or these.", a: "What are double quotes?" },
+      1: { q: "This string method converts 'hello' to 'HELLO'.", a: "What is .upper()?" },
+      2: { q: "Placing an f before a string literal lets you embed variables directly inside curly braces.", a: "What is an f-string (formatted string literal)?" },
+      3: { q: "The expression 'Python'[0:3] returns this value.", a: "What is 'Pyt'?" },
+      4: { q: "This string method splits 'one,two,three' into a list of three items using a comma.", a: "What is .split(',')?" },
     },
+    // Category 2: Lists & Loops
     2: {
-      0: { q: "This command dumps the entire contents of a file to the screen.", a: "What is cat?" },
-      1: { q: "In vi, pressing this key switches from command mode to insert mode.", a: "What is i?" },
-      2: { q: "This command shows the last 20 lines of access.log: tail -n 20 access.log. The command name means this body part.", a: "What is tail?" },
-      3: { q: "In vi, this command sequence saves the file and exits: colon, w, q.", a: "What is :wq?" },
-      4: { q: "To see the first 5 lines of /etc/passwd, you use this command with -n 5.", a: "What is head?" },
+      0: { q: "In Python, a list is created using these bracket characters.", a: "What are square brackets [ ]?" },
+      1: { q: "This method adds a single item to the end of a list.", a: "What is .append()?" },
+      2: { q: "A for loop that prints each item in a list starts with: for item in this.", a: "What is the list name?" },
+      3: { q: "The range(5) function generates numbers from 0 up to but not including this number.", a: "What is 5?" },
+      4: { q: "This one-line syntax creates a new list by applying an expression to each item: [x*2 for x in numbers].", a: "What is a list comprehension?" },
     },
+    // Category 3: Functions
     3: {
-      0: { q: "This symbol sends the output of one command as input to another command.", a: "What is the pipe |?" },
-      1: { q: "The > operator does this to an existing file's contents.", a: "What is overwrite (replace) them?" },
-      2: { q: "To add text to the end of a file without destroying existing content, use this double operator.", a: "What is >>?" },
-      3: { q: "ls /etc | grep network — the grep part of this command does this job.", a: "What is filter the output to show only lines containing 'network'?" },
-      4: { q: "This redirection operator sends error messages (stderr) to a file: the number 2 followed by >.", a: "What is 2>?" },
+      0: { q: "In Python, you define a function using this keyword followed by the function name.", a: "What is def?" },
+      1: { q: "A function sends a value back to the caller using this keyword.", a: "What is return?" },
+      2: { q: "A function defined with def greet(name='World') has this kind of parameter.", a: "What is a default parameter?" },
+      3: { q: "The special value a Python function returns if it has no return statement.", a: "What is None?" },
+      4: { q: "A small anonymous function written in one line using this keyword: square = lambda x: x ** 2.", a: "What is lambda?" },
     },
+    // Category 4: Conditionals
     4: {
-      0: { q: "The permission string -rwxr-x--- translates to this three-digit octal number.", a: "What is 750?" },
-      1: { q: "chmod u+x script.sh adds this specific permission for the owner only.", a: "What is execute?" },
-      2: { q: "chmod 644 gives the owner read/write and gives group and others this permission.", a: "What is read-only?" },
-      3: { q: "This command changes the group ownership of a file (not the owner).", a: "What is chgrp?" },
-      4: { q: "chown student:staff notes.txt sets both owner and group in one command. The colon separates these two things.", a: "What are the user and the group?" },
+      0: { q: "This keyword starts a conditional statement in Python.", a: "What is if?" },
+      1: { q: "When an if condition is False, you check another condition using this keyword.", a: "What is elif?" },
+      2: { q: "Python uses True and False — these are the two values of this data type.", a: "What is bool (boolean)?" },
+      3: { q: "The operator == checks for equality, while this operator checks if two values are NOT equal.", a: "What is != ?" },
+      4: { q: "This logical operator returns True only when BOTH conditions are True: if age >= 18 and has_id.", a: "What is and?" },
     },
   },
   finalJeopardy: {
-    category: "Linux Security",
-    clue: "When a file has permissions -rw-r-----, the three dashes at the end mean this group of users has absolutely no access to the file.",
-    answer: "Who are 'others' (everyone else on the system)?",
+    category: "Python History",
+    clue: "Python was created by this Dutch programmer, who named the language after Monty Python's Flying Circus.",
+    answer: "Who is Guido van Rossum?",
     timerSeconds: 60,
   },
 }
