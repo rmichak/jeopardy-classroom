@@ -346,7 +346,7 @@ export default function JeopardyGame() {
       {/* FINAL JEOPARDY BUTTON + AI LINK */}
       <div className="board-top-bar">
         <button className="btn btn-final btn-final-board" onClick={openFinal}>🏆 FINAL JEOPARDY</button>
-        <a href="/instructions" target="_blank" rel="noopener noreferrer" className="ai-help-link">🤖 Create games with AI</a>
+        <a href="/instructions" target="_blank" rel="noopener noreferrer" className="ai-help-link">🤖 Generate your own questions with AI</a>
       </div>
 
       {/* BOARD */}
